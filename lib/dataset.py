@@ -1,25 +1,55 @@
 import numpy as np
 from sklearn import linear_model
 from itertools import permutations
+from lang_model import Extractor
+from utils.reader import *
+import csv,sys
+
+count = 0
+
 clf = linear_model.LinearRegression()
-filename = "raibbish"
-fp = np.memmap(
-		filename,
-		mode = 'w+',
-		shape = (999000,2),
-		dtype="float64"
-	)
-fp[:] = [(i,j) for i,j in permutations(range(0,1000),2)][:]
-w     = np.array([3,4])
-res   = np.array([np.dot(w,v) for v in fp])
-print fp 
-del fp
+filenames = [sys.argv[1]]
+filename_x = "X"
+filename_y = "Y"
+window_size = 15
 
-fp = np.memmap(filename, shape = (999000,2), mode='r', dtype="float64")
-print fp
+e = Extractor()
+count = sum(1 for _ in windowed(filenames,window_size))
 
-clf.fit(fp,res)
-print clf.predict([1,0])
-print clf.predict([0,1])
-print clf.predict([1,1])
-print clf.predict([0,0])
+class RewinderWindow():
+	def __init__(self,filenames,window_size):
+		self.filenames = filenames
+		self.window_size = window_size
+	def reset(self):
+		return windowed(self.filenames,self.window_size)
+e.train(RewinderWindow(filenames,window_size))
+e.finalise()
+
+
+def first(vec_size,vec_count):
+	X = np.memmap(
+			filename_x,
+			mode = 'w+',
+			shape = (vec_count,vec_size),
+			dtype="float64"
+		)
+	Y = np.memmap(
+			filename_y,
+			mode  = "w+",
+			shape = (vec_count,),
+			dtype = "float64"
+		)
+	return X,Y
+X,Y = None,None
+for i,instance in enumerate(windowed(filenames,window_size)):
+	window, d_t = instance
+	x_vec = e.extract(window)
+	if i == 0:  X,Y = first(len(x_vec),count)
+	X[i][:] = x_vec[:]
+	Y[i] = d_t
+
+print X, X.shape
+print Y, Y.shape
+
+
+
