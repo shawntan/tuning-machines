@@ -1,7 +1,7 @@
 #!/usr/bin/python2
 import nltk,re
 from nltk.stem.porter import PorterStemmer
-import sys,time
+import time
 
 bin_size = 10
 users = set()
@@ -48,8 +48,9 @@ def windowed(threadfiles,N, offset = -1):
 				prev_window = tuple(result)
 
 def filter_tokenise(text):
+	text = text.lower()
 	r = []
-	for w in text.split():
+	for w in re.split('[^0-9a-z\.\$]+',text):
 		w = preprocess(w)
 		if w: r.append(w)
 	return r
@@ -58,14 +59,17 @@ def filter_tokenise(text):
 non_alphanum = re.compile('\W') 
 number = re.compile('[0-9]')
 splitter = re.compile('[\s\.\-\/]+')
+model = re.compile('([.\#]+\w+|\w+[.\#]+)')
 stemmer = PorterStemmer()
 stop_words = set(nltk.corpus.stopwords.words('english'))
 def preprocess(word):
 	global users
-	w = non_alphanum.sub("",word)
+	w = word
 	w = w.lower()
 	if w in stop_words: return
+	w = number.sub("#",w)
+	if model.match(w): return #w = "#MODEL#"
 	if w in users: return "#USER#"
 	w = stemmer.stem_word(w)
-	w = number.sub("#",w)
+	if len(w) < 3 : return
 	return w
