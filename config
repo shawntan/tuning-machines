@@ -1,3 +1,6 @@
 [dirs]
 working	=	working
 reports	=	reports
+
+[filename_formats]
+date	=	%Y_%m_%d
